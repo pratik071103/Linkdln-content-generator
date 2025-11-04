@@ -63,7 +63,7 @@ Once all credentials are added in n8n, test them individually.
 ### 🪄 Step 1: Telegram Topic Suggestions  
 Bot lists 6 trending AI news headlines with summaries.
 
-![telegram_topics](linkedln bot 1.png)
+![telegram_topics](assets/telegram_topics.png)
 
 ---
 
@@ -71,6 +71,13 @@ Bot lists 6 trending AI news headlines with summaries.
 Gemini writes a LinkedIn-style post and asks for approval.
 
 ![telegram_draft_approval](assets/telegram_draft_approval.png)
+
+---
+
+### ⚙️ Workflow Preview  
+A clean composite view of the Telegram workflow and Gemini stages.
+
+![linkedin_workflow_preview](assets/linkedin_workflow_preview.png)
 
 ---
 
