@@ -1,0 +1,579 @@
+{
+  "name": "linkedln content",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1e078f1d-71a7-4a1e-b0b1-febb79ab4f7c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=%22AI%20productivity%22%20OR%20%22AI%20tools%22&hl=en-IN&gl=IN&ceid=IN:en",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "a9819462-1aea-4127-8650-a18fc2997613",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.slice(0, 12).map(i => ({\n  json: {\n    title: i.json.title,\n    link: i.json.link,\n    pubDate: i.json.isoDate || i.json.pubDate || null\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "a49fa77d-1536-4f0c-98aa-e34e6d4dc9bb",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Human: You are a news curator for AI productivity.\nBelow is a JSON list of AI-related headlines and links.\nFrom these, pick the 6 most relevant and recent ones.\nReturn ONLY a JSON array like:\n[\n  { \"rank\": 1, \"title\": \"...\", \"summary\": \"...\", \"url\": \"...\" },\n  { \"rank\": 2, \"title\": \"...\", \"summary\": \"...\", \"url\": \"...\" }\n]\nDo not ask for more data — use the JSON provided below.\n\nHeadlines:\n{{JSON.stringify($input.all().map(item => item.json))}}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "644e337c-5203-42e3-ad39-05e664760a51",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        624,
+        176
+      ],
+      "id": "ee68bf78-7c38-447e-9eb3-c27831c673e5",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MuvaSj8Qls0mAphh",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let content = $json.output || $json;          // Gemini sometimes nests text in \"output\"\nif (typeof content === \"string\") {\n  const match = content.match(/\\[[\\s\\S]*\\]/);\n  content = match ? match[0] : content;\n}\nlet list;\ntry {\n  list = JSON.parse(content);\n} catch (err) {\n  throw new Error(\"Output is not valid JSON: \" + err.message);\n}\nreturn list.map(i => ({\n  json: {\n    rank: i.rank,\n    title: i.title,\n    summary: i.summary,\n    url: i.url\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "70d33f2b-b5fa-46cb-8349-d2b3ff480236",
+      "name": "Clean Gemini Output"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot7858128335:AAHUQeJncxzY2cStao8h2GI64T4-X-rd6KM/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "7607796127"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.rank + \". \" + $json.title + \"\\n📝 \" + $json.summary }}\n\n"
+            },
+            {
+              "name": "parse_mode",
+              "value": "Markdown"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "b4a39eea-055b-4d83-9f7e-de057dd95f19",
+      "name": "Send Telegram Message"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "7607796127",
+        "message": "Please reply with the number (1–6) of the topic you want me to draft for LinkedIn.\n",
+        "responseType": "freeText",
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 6
+            }
+          },
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "f47610ca-1936-4011-a6c6-762f5910360d",
+      "name": "Wait for Telegram Response",
+      "webhookId": "dd015d11-e940-4c6b-8d35-0f40a928ceb1",
+      "credentials": {
+        "telegramApi": {
+          "id": "rp7U2dC6TxUXw3Kt",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1️⃣ Safely extract Telegram reply\nconst selectedText =\n  $json?.data?.text ||\n  $json?.text ||\n  $json?.message?.text ||\n  null;\n\n// 2️⃣ Parse numeric selection\nconst selectedNumber = parseInt(selectedText, 10);\n\n// 3️⃣ Collect all articles from Clean Gemini Output (each item = 1 article)\nconst articles = $items(\"Clean Gemini Output\").map(item => item.json);\n\n// 4️⃣ Validate input\nif (!Array.isArray(articles) || isNaN(selectedNumber) || selectedNumber < 1 || selectedNumber > articles.length) {\n  return [\n    {\n      json: {\n        error: \"Invalid selection or number out of range\",\n        selectedNumber,\n        articlesLength: Array.isArray(articles) ? articles.length : 0,\n      },\n    },\n  ];\n}\n\n// 5️⃣ Get selected article\nconst selectedArticle = articles[selectedNumber - 1];\n\n// 6️⃣ Return structured result\nreturn [\n  {\n    json: {\n      selectedNumber,\n      selectedArticle,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        0
+      ],
+      "id": "53f57dd2-a0f9-42c4-84f2-051336a4b12a",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional LinkedIn content writer who writes in Vaibhav Sisinty’s style.\n\nWrite an engaging LinkedIn post about the following article:\nTitle: {{$json.selectedArticle.title}}\nSummary: {{$json.selectedArticle.summary}}\nURL: {{$json.selectedArticle.url}}\n\nRules:\n- Start with a catchy hook line.\n- Keep it conversational and concise.\n- Use line breaks for readability.\n- End with a reflective question or CTA.\n- Avoid hashtags and URLs in the body.\n- Add relevant emojis.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1776,
+        0
+      ],
+      "id": "bc0a4f95-eb35-47dc-a3e0-737debd418b9",
+      "name": "Generate linkedln draft"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        192
+      ],
+      "id": "ed4044a9-906a-4f76-9d6b-2ba8220c7e6c",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MuvaSj8Qls0mAphh",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "7607796127",
+        "text": "=Here’s your LinkedIn draft for the selected topic 👇  {{$json.output}}  Would you like me to post this automatically at 7 PM? ✅ or ❌",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2128,
+        0
+      ],
+      "id": "11654e5d-f35d-43f7-87c9-3aeedcb21684",
+      "name": "Send a text message",
+      "webhookId": "8c1c485f-ecae-4031-b1cc-01fad2f98ae6",
+      "credentials": {
+        "telegramApi": {
+          "id": "rp7U2dC6TxUXw3Kt",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "7607796127",
+        "message": "Please reply ✅ to approve or ❌ to skip this post.",
+        "responseType": "freeText",
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 6
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2336,
+        0
+      ],
+      "id": "9ad860d5-6ce9-4dd9-8acd-bde94af3af5c",
+      "name": "Wait for Telegram Response1",
+      "webhookId": "77e2584b-af94-4484-b6b1-bbcd1470b3a3",
+      "credentials": {
+        "telegramApi": {
+          "id": "rp7U2dC6TxUXw3Kt",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const reply = $json.data?.text?.trim().toLowerCase() || \"\";\n\nreturn [{\n  json: {\n    approved: reply === \"✅\" || reply === \"yes\" || reply === \"approve\",\n    rawReply: reply\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        0
+      ],
+      "id": "d57e4e0f-f17a-4fdf-aecc-167db8cce79b",
+      "name": "convert to boolean value"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "426e1707-4110-4a2a-b11a-5687096ba946",
+              "leftValue": "={{ $json[\"approved\"] }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2752,
+        0
+      ],
+      "id": "1743cc33-28a8-48a7-afd0-33f03aa1091d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "7607796127",
+        "text": "✅ Great! Your LinkedIn post has been approved. I’ll queue it for posting.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2960,
+        -96
+      ],
+      "id": "6398dd86-370e-48a5-a132-7dc6b73ef6eb",
+      "name": "Approval message",
+      "webhookId": "e89e14a6-182f-4f23-abb3-4171a943db4a",
+      "credentials": {
+        "telegramApi": {
+          "id": "rp7U2dC6TxUXw3Kt",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "person": "pratik-kumar-jha-5509742b0",
+        "text": "={{ $json[\"output\"] }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        3168,
+        -96
+      ],
+      "id": "12917cea-55c3-45f1-b382-b4dce4dbf96e",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "l16KdNMx9dchr3Ev",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "7607796127",
+        "text": "❌ Post skipped as per your response.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2960,
+        96
+      ],
+      "id": "beeba68e-2b52-426d-a222-344653f0157c",
+      "name": "Post skipped message",
+      "webhookId": "7807a935-d097-4434-90d9-879177382ad9",
+      "credentials": {
+        "telegramApi": {
+          "id": "rp7U2dC6TxUXw3Kt",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Clean Gemini Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Gemini Output": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Wait for Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Telegram Response": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Generate linkedln draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate linkedln draft",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate linkedln draft": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Wait for Telegram Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Telegram Response1": {
+      "main": [
+        [
+          {
+            "node": "convert to boolean value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "convert to boolean value": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Approval message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Post skipped message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval message": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post skipped message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
