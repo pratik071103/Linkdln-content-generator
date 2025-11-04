@@ -63,7 +63,7 @@ Once all credentials are added in n8n, test them individually.
 ### 🪄 Step 1: Telegram Topic Suggestions  
 Bot lists 6 trending AI news headlines with summaries.
 
-![telegram_topics](assets/telegram_topics.png)
+![telegram_topics](linkedln bot 1.png)
 
 ---
 
