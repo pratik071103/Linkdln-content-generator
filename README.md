@@ -33,7 +33,7 @@ This workflow automates your content generation for LinkedIn:
 1. Open [n8n.io](https://app.n8n.io)
 2. Create a new workflow
 3. Click **Import** → Upload  
-   `workflows/linkedin_content_generator.json`
+   `LinkedIn content generator.json`
 
 ---
 
@@ -63,28 +63,21 @@ Once all credentials are added in n8n, test them individually.
 ### 🪄 Step 1: Telegram Topic Suggestions  
 Bot lists 6 trending AI news headlines with summaries.
 
-![telegram_topics](assets/telegram_topics.png)
+![telegram_topics](linkedln%20bot%201.png)
 
 ---
 
 ### ✍️ Step 2: AI-Generated Draft + Approval via Telegram  
 Gemini writes a LinkedIn-style post and asks for approval.
 
-![telegram_draft_approval](assets/telegram_draft_approval.png)
+![telegram_draft_approval](linkedln%20bot%202.png)
 
 ---
 
 ### ⚙️ Workflow Preview  
 A clean composite view of the Telegram workflow and Gemini stages.
 
-![linkedin_workflow_preview](assets/linkedin_workflow_preview.png)
-
----
-
-### 🧠 Full Workflow Visualization  
-The complete n8n pipeline for LinkedIn Content Generator v1.
-
-![linkedin_workflow_full](assets/linkedin_workflow_full.png)
+![linkedin_workflow_preview](workflow.png)
 
 ---
 
@@ -110,4 +103,6 @@ Built with ❤️ using **automation + AI**
 
 ---
 
-## 🗂️ Folder Structure
+## ⚖️ License
+This project is released under the MIT License.  
+Feel free to use, fork, and improve with credit.
